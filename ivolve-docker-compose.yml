@@ -1,0 +1,56 @@
+version: "3"
+ 
+services: 
+  postgres:
+    image: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data_staging
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+    ports:
+      - 5428:5432
+    networks:
+      - cloud7
+  keycloak:
+    image: quay.io/keycloak/keycloak:14.0.0
+    container_name: keycloak
+    volumes:
+      - ./imports:/opt/jboss/keycloak/imports
+ 
+    environment:
+      KEYCLOAK_IMPORT: /opt/jboss/keycloak/imports/realm-c7-export.json -Dkeycloak.profile.feature.upload_scripts=enabled
+      DB_VENDOR: POSTGRES
+      DB_ADDR: postgres
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_SCHEMA: public
+      DB_PASSWORD: password
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+    command:
+      - "-b 0.0.0.0 -Dkeycloak.import=/opt/jboss/keycloak/imports/realm-c7-export.json"
+      - "-Dkeycloak.profile.feature.upload_scripts=enabled"
+      - "-Dkeycloak.profile.feature.token_exchange=enabled"
+      - "-Dkeycloak.profile=preview"
+ 
+        #      - "-Dkeycloak.profile.feature.upload_scripts=enabled"
+        # Uncomment the line below if you want to specify JDBC parameters. The parameter below is just an example, and it shouldn't be used in production without knowledge. It is highly recommended that you read the PostgreSQL JDBC driver documentation in order to use it.
+        #JDBC_PARAMS: "ssl=true"
+    ports:
+      - 8080:8080
+    depends_on:
+      - postgres
+    networks:
+      - cloud7
+ 
+
+volumes:
+  postgres_data:
+    driver: local
+ 
+networks:
+  cloud7:
+    external:
+      name: cloud7
